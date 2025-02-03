@@ -84,7 +84,6 @@ def Stim_files(directory_path, progress_var, verification_input):
                         # Calculate start and end voltages
                         start_voltage = np.argmax(abf.sweepY > 1)
                         end_voltage_all = np.nonzero(abf.sweepY > 1)[0]
-                        print (end_voltage_all)
                         
                         last_stim_indices = []
                         last_stim_times = []
@@ -96,13 +95,11 @@ def Stim_files(directory_path, progress_var, verification_input):
                         # Handle the case where there is only one continuous stimulation event
                         if len(last_stim_indices) == 0 and len(end_voltage_all) > 0:
                             last_stim_indices.append(end_voltage_all[-1])  
-                              
-                        print (last_stim_indices)     
+                                  
                         # Find corresponding times for filtered indices
                         for idx in last_stim_indices:
                             if idx < len(abf.sweepX):
                                 last_stim_times.append(abf.sweepX[idx])
-                        print (last_stim_times) 
                                
                         # Filter to keep only the first index for each stimulation event
                         filtered_indices = [end_voltage_all[0]] if end_voltage_all.size > 0 else []
@@ -142,24 +139,14 @@ def Stim_files(directory_path, progress_var, verification_input):
                         # Compute the average trace across all sweeps
                         df["Average_Trace"] = df.drop(columns=["Time (s)"]).mean(axis=1)
                         
-                        # Display the dataframe
-                        print("Channel 2 Data:")
-                        print(df)
-
                         # Define constants
                         time_after_stim = 0.0015  # Time in seconds after stim time to consider for finding most negative value
 
-                        # Your existing code here to generate df and filtered_indices
-
-                        # Initialize list to store results
-                        data_list = []
+                        
                         mean_values_dict = {"Filename": os.path.basename(abf_file_path)}
                         file_extreme_values = []
 
                         for idx, time_stim in enumerate(filtered_times):
-                            # Find the index of time_stim in df["Time (s)"]
-                            idx_stim = df[df["Time (s)"] == time_stim].index[0]
-
                             # Find the index in df where time is time_stim + time_after_stim
                             idx_after_stim = df[df["Time (s)"] >= (time_stim + time_after_stim)].index.min()
 
@@ -243,14 +230,10 @@ def Stim_files(directory_path, progress_var, verification_input):
 
 
                         all_data_list.append(mean_values_dict)
-                        all_extreme_values.append(file_extreme_values)
-                          
-                        print("Most negatives_values:")
-                        #print (most_negative_values)    
+                        all_extreme_values.append(file_extreme_values) 
                         
                         # Create a DataFrame from mean_values_dict
                         result_df = pd.DataFrame(all_data_list)
-                        
                         
                         graphes_folder = os.path.join(folder_path, "Graphes")
                         os.makedirs(graphes_folder, exist_ok=True)
@@ -368,7 +351,6 @@ def AMPA_NMDA_files(directory_path, progress_var, verification_input):
                         selected_columns = df.columns[(df.columns.get_loc('Time (s)') + 1):]
                         time_after_stim = 0.002  # Time in seconds after stim time to consider for finding most negative value
                         time_after_stim50ms = 0.050
-                        data_list = []
                         mean_values_dict = {"Filename": os.path.basename(abf_file_path)}
                         file_extreme_values = []
 
@@ -385,8 +367,6 @@ def AMPA_NMDA_files(directory_path, progress_var, verification_input):
                             values_dict = {"Filename": os.path.basename(abf_file_path), "stim": idx + 1}
                             extreme_values = []
                             extreme_times = []
-                            ampa_values = []
-                            nmda_values = []
                             
                             for sweep_number, col in enumerate(selected_columns):
                                 if sweep_number == 0:  # First sweep: most negative value
@@ -827,7 +807,7 @@ def Cellattached_files(directory_path, progress_var, verification_input):
 
                 if folder_found and avg_values_dict:            
                     # Créer une fenêtre contextuelle pour attendre l'action de l'utilisateur
-                    continue_window_V2 = create_continue_window_V2(avg_values_dict, signal_data, folder_path)
+                    continue_window_V2 = create_continue_window_V2(avg_values_dict, signal_data, details_folder_path)
 
                     # Attendre que l'utilisateur clique sur la fenêtre contextuelle
                     window.wait_window(continue_window_V2)
@@ -1277,19 +1257,15 @@ def Capa_files(directory_path, progress_var):
 def Em_files(directory_path, progress_var, verification_input):
         total_files = get_total_abf_files_in_folders(directory_path, ["Em"])
         current_value = 0 
-        all_info_dict = {}
         avg_values_dict = {}
-        abf_files = []
-
+        
         for root, dirs, files in os.walk(directory_path):
             for folder_name in dirs:
                 if folder_name == 'Em':
                     avg_values_dict = {}  
                     folder_path = os.path.join(root, folder_name)  
-                    sweep_names = [] 
                     global_avg_list = []  
-                    last_sweep_data = [] 
-
+                     
                     for filename in os.listdir(folder_path):    
                         
                         if filename.endswith(".abf"):                           
@@ -1302,7 +1278,6 @@ def Em_files(directory_path, progress_var, verification_input):
                             os.makedirs(details_folder_path, exist_ok=True)
                             
                             sweep_data = {"Time (s)": abf.sweepX}
-                            all_max_peak_values_dict = []
                             all_avg_freqs = []
                             all_cv_isis = []
                             all_Em = []
@@ -1311,13 +1286,11 @@ def Em_files(directory_path, progress_var, verification_input):
                                 abf.setSweep(sweepNumber=sweep_number, channel=channel_to_analyze)
                                 time = abf.sweepX
                                 signal = abf.sweepY
-                                threshold = 20
-
+                                
                                 column_name_y = f"Sweep {sweep_number:.2f}"
                                 sweep_data[column_name_y] = abf.sweepY
                                 
                                 peak_indices, _ = find_peaks(signal, height=0)
-
                                 peak_times = time[peak_indices]  # Temps des minima
                                 peak_values = signal[peak_indices]  # Valeurs originales des minima
 
@@ -1346,7 +1319,6 @@ def Em_files(directory_path, progress_var, verification_input):
                             # Créer un DataFrame pandas
                             df = pd.DataFrame(sweep_data)
 
-        
                             global_avg_freq = np.mean(all_avg_freqs) if all_avg_freqs else 0
                             global_cv_isi = np.mean(all_cv_isis) if all_cv_isis else 0
                             global_avg_Em = np.mean(all_Em) if all_Em else 0
@@ -1404,8 +1376,6 @@ def Em_files(directory_path, progress_var, verification_input):
                     progress_percentage = (current_value / total_files) * 100
                     update_progress(progress_var, progress_percentage)
                     
-            
-
                     if verification_input == 'Y':                            
                         # Créer une fenêtre contextuelle pour attendre l'action de l'utilisateur
                         continue_window = create_continue_window()
@@ -1413,7 +1383,6 @@ def Em_files(directory_path, progress_var, verification_input):
                         # Attendre que l'utilisateur clique sur la fenêtre contextuelle
                         window.wait_window(continue_window)
 
- 
 
 # Fonction pour obtenir le nombre total de fichiers ABF dans les dossiers spécifiés
 def get_total_abf_files_in_folders(root_folder, target_folders):
@@ -1453,7 +1422,7 @@ def detect_peaks_and_calculate_frequency(time, signal, height_threshold=-30):
         "Frequency (Hz)": frequencies
     }
 
-def create_continue_window_V2(avg_values_dict, signal_data, folder_path):
+def create_continue_window_V2(avg_values_dict, signal_data, details_folder_path):
     """
     Crée une fenêtre interactive pour permettre à l'utilisateur de continuer ou de modifier les thresholds.
 
@@ -1477,7 +1446,7 @@ def create_continue_window_V2(avg_values_dict, signal_data, folder_path):
     tk.Button(
         continue_window,
         text="Modifier Threshold",
-        command=lambda: modify_threshold(avg_values_dict, signal_data, folder_path)
+        command=lambda: modify_threshold(avg_values_dict, signal_data, details_folder_path)
     ).pack(pady=5)
 
     # Taille de la fenêtre
@@ -1529,7 +1498,7 @@ def create_continue_window():
     # Renvoyer la fenêtre contextuelle créée
     return continue_window
 
-def modify_threshold(avg_values_dict, signal_data, folder_path):
+def modify_threshold(avg_values_dict, signal_data, details_folder_path):
     """
     Ouvre une fenêtre interactive pour modifier le threshold
     pour un ou plusieurs sweeps combinés (filename + sweep).
@@ -1559,7 +1528,7 @@ def modify_threshold(avg_values_dict, signal_data, folder_path):
                 print(f"Attention : {sweep_key} n'a pas été trouvé.")
 
         # Recalculer les pics et mettre à jour les graphes
-        recalculate_peaks_and_update_graphs(avg_values_dict, signal_data, modified_sweeps, folder_path)
+        recalculate_peaks_and_update_graphs(avg_values_dict, signal_data, modified_sweeps, details_folder_path)
         threshold_window.destroy()
 
     # Créer la fenêtre interactive pour modifier les thresholds
@@ -1580,7 +1549,7 @@ def modify_threshold(avg_values_dict, signal_data, folder_path):
     tk.Button(threshold_window, text="Appliquer", command=apply_threshold).pack(pady=10)
     return threshold_window
 
-def recalculate_peaks_and_update_graphs(avg_values_dict, signal_data, modified_sweeps, folder_path):
+def recalculate_peaks_and_update_graphs(avg_values_dict, signal_data, modified_sweeps, details_folder_path):
     """
     Recalcule les pics, met à jour les statistiques, réaffiche les graphes et sauvegarde les moyennes dans un fichier Excel.
 
@@ -1688,6 +1657,8 @@ def recalculate_peaks_and_update_graphs(avg_values_dict, signal_data, modified_s
         plt.tight_layout()
         plt.show(block=False)
 
+        graph_filename = os.path.join(details_folder_path, f'{os.path.splitext(filename)[0]}.png')
+        plt.savefig(graph_filename)
         print(f"Graphes mis à jour pour {filename} avec les thresholds actuels.")
 
         # Calculer les moyennes globales pour le fichier
@@ -1752,19 +1723,19 @@ window.columnconfigure(0, weight=1)
 window.rowconfigure(0, weight=1)
 
 # Widgets
-label_instruction = ttk.Label(main_frame, text="Sélectionnez le dossier contenant les fichiers à analyser :")
+label_instruction = ttk.Label(main_frame, text="Select the folder containing the files to analyze:")
 label_instruction.grid(column=0, row=0, columnspan=3, pady=5, sticky=tk.W)
 
 entry_path = ttk.Entry(main_frame, width=50)
 entry_path.grid(column=0, row=1, padx=5, pady=5, columnspan=2, sticky=tk.W)
 
-button_browse = ttk.Button(main_frame, text="Parcourir", command=choose_directory)
+button_browse = ttk.Button(main_frame, text="Browse", command=choose_directory)
 button_browse.grid(column=2, row=1, padx=5, pady=5, sticky=tk.W)
 
-checkbutton_verification = ttk.Checkbutton(main_frame, text="Vérification manuelle des graphes", variable=manual_verification_var)
+checkbutton_verification = ttk.Checkbutton(main_frame, text="Display the graphs", variable=manual_verification_var)
 checkbutton_verification.grid(column=0, row=2, columnspan=3, pady=5, sticky=tk.W)
 
-button_process = ttk.Button(main_frame, text="Traiter les fichiers", command=process_files)
+button_process = ttk.Button(main_frame, text="Process the files", command=process_files)
 button_process.grid(column=0, row=3, columnspan=3, pady=10)
 
 progress_bar = ttk.Progressbar(main_frame, orient="horizontal", length=300, mode="determinate", maximum=100)
